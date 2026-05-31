@@ -1,0 +1,9 @@
+.env
+venv/
+__pycache__/
+*.pyc
+chroma_db/
+debug_screenshot.png
+danistay_dump.html
+scratch/
+.DS_Store
