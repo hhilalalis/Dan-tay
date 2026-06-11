@@ -25,7 +25,10 @@ async def scrape_cases(search_query: str = "vergi", max_cases: int = 5) -> list[
     logger.info(f"Starting Playwright to scrape {url} for query '{search_query}' (max {max_cases} cases)")
     
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await p.chromium.launch(
+            headless=True,
+            args=["--no-sandbox", "--disable-dev-shm-usage"]
+        )
         page = await browser.new_page()
         
         try:
