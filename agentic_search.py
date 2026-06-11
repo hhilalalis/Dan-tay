@@ -66,7 +66,8 @@ def generate_answer(question: str, cases: List[Dict]) -> str:
         "Use the following retrieved case documents to answer the user's question. "
         "Provide a comprehensive answer that references the relevant cases. "
         "If the cases don't contain sufficient information to answer the question, acknowledge this limitation. "
-        "Format your answer clearly with bullet points or numbered lists where appropriate."
+        "Format your answer clearly with bullet points or numbered lists where appropriate. "
+        "IMPORTANT: Always respond in the same language the user's question is written in."
     )
     
     user_prompt = f"Question: {question}\n\nRetrieved Cases:\n{cases_text}"
