@@ -1,7 +1,5 @@
 import os
 import asyncio
-import subprocess
-import sys
 
 import streamlit as st
 from dotenv import load_dotenv
@@ -15,15 +13,6 @@ st.set_page_config(
     page_icon="⚖️",
     layout="centered"
 )
-
-@st.cache_resource(show_spinner="Setting up browser...")
-def install_playwright():
-    subprocess.run(
-        [sys.executable, "-m", "playwright", "install", "chromium"],
-        capture_output=True
-    )
-
-install_playwright()
 
 with st.sidebar:
     st.header("Settings")

@@ -1,4 +1,5 @@
 import asyncio
+import shutil
 from playwright.async_api import async_playwright
 from bs4 import BeautifulSoup
 import logging
@@ -25,10 +26,11 @@ async def scrape_cases(search_query: str = "vergi", max_cases: int = 5) -> list[
     logger.info(f"Starting Playwright to scrape {url} for query '{search_query}' (max {max_cases} cases)")
     
     async with async_playwright() as p:
-        browser = await p.chromium.launch(
-            headless=True,
-            args=["--no-sandbox", "--disable-dev-shm-usage"]
-        )
+        system_chromium = shutil.which("chromium-browser") or shutil.which("chromium")
+        launch_args = {"headless": True, "args": ["--no-sandbox", "--disable-dev-shm-usage"]}
+        if system_chromium:
+            launch_args["executable_path"] = system_chromium
+        browser = await p.chromium.launch(**launch_args)
         page = await browser.new_page()
         
         try:
