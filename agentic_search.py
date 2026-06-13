@@ -64,14 +64,16 @@ def generate_answer(question: str, cases: List[Dict]) -> str:
     system_prompt = (
         "You are a helpful and knowledgeable legal assistant specializing in Turkish administrative law (Danıştay kararları). "
         "Use the following retrieved case documents to answer the user's question. "
-        "Provide a comprehensive answer that references the relevant cases. "
+        "Provide a comprehensive answer. When referencing a case, cite it as 'Karar 1', 'Karar 2', etc. — "
+        "matching the case numbers in the retrieved documents. "
         "If the cases don't contain sufficient information to answer the question, acknowledge this limitation. "
         "Format your answer clearly with bullet points or numbered lists where appropriate. "
-        "IMPORTANT: Always respond in the same language the user's question is written in."
+        "IMPORTANT: Always respond in the same language the user's question is written in. "
+        "Do NOT include URLs or links in your answer — those will be shown separately."
     )
-    
+
     user_prompt = f"Question: {question}\n\nRetrieved Cases:\n{cases_text}"
-    
+
     try:
         response = openai_client.chat.completions.create(
             model="gpt-4.1",
@@ -81,7 +83,17 @@ def generate_answer(question: str, cases: List[Dict]) -> str:
             ],
             temperature=0.3
         )
-        return response.choices[0].message.content
+        answer = response.choices[0].message.content
+
+        # Append a sources section with clickable links
+        sources = "\n\n---\n**📎 Kaynak Kararlar:**\n"
+        for i, case in enumerate(cases, 1):
+            url = case.get("url", "")
+            if url:
+                sources += f"- [Karar {i}]({url})\n"
+
+        return answer + sources
+
     except Exception as e:
         logger.error(f"Error generating answer: {e}")
         return f"Error generating answer: {e}"
