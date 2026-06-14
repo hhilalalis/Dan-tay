@@ -64,7 +64,7 @@ def extract_search_terms(question: str) -> List[str]:
     system_prompt = (
         "You are a legal search assistant for Turkish administrative law (Danıştay). "
         "Extract the most relevant Turkish search phrases from the user's question. "
-        "Return one phrase per line — each phrase should be 2-3 words max, no explanation. "
+        "Return one word or two words per line — NEVER more than two words per phrase, no explanation. "
         "Return between 1 and 4 phrases depending on how many distinct legal concepts the question covers. "
         "Do not repeat the same concept twice."
     )
@@ -79,7 +79,14 @@ def extract_search_terms(question: str) -> List[str]:
             temperature=0
         )
         raw = response.choices[0].message.content.strip()
-        phrases = [line.strip() for line in raw.splitlines() if line.strip()]
+        phrases = []
+        for line in raw.splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            # Hard enforce: keep only the first 2 words
+            words = line.split()
+            phrases.append(" ".join(words[:2]))
         logger.info(f"Extracted search phrases: {phrases}")
         return phrases
     except Exception as e:
