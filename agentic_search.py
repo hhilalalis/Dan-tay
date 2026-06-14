@@ -1,5 +1,6 @@
 import os
 import asyncio
+import json
 import logging
 from openai import OpenAI
 from typing import List, Dict
@@ -12,6 +13,46 @@ def get_openai_client():
     if not os.environ.get("OPENAI_API_KEY"):
         logger.warning("OPENAI_API_KEY not found in environment variables.")
     return OpenAI()
+
+def check_scope(question: str) -> dict:
+    """
+    Returns {"in_scope": True/False, "reason": "explanation in the user's language"}.
+    Decides whether the question falls within Danıştay's jurisdiction before scraping.
+    """
+    openai_client = get_openai_client()
+
+    system_prompt = (
+        "You are a Turkish administrative law expert. Decide whether the user's question "
+        "falls within the jurisdiction of Danıştay (Turkish Council of State), which is an "
+        "ADMINISTRATIVE court that only handles disputes involving a government/state body.\n\n"
+        "IN SCOPE for Danıştay: tax disputes, administrative fines, municipal decisions, "
+        "public servant rights, government contracts, zoning/planning, university administrative "
+        "decisions (admissions, transfers, disciplinary), public procurement, immigration/citizenship "
+        "decisions, licensing by public authorities.\n\n"
+        "OUT OF SCOPE: divorce, custody, alimony, private inheritance, criminal cases, "
+        "disputes between private companies or individuals, private employment disputes, "
+        "personal injury between private parties — anything that does not involve a government body.\n\n"
+        "Respond ONLY with valid JSON: "
+        "{\"in_scope\": true or false, \"reason\": \"1-2 sentence explanation in the same language the user wrote in\"}"
+    )
+
+    try:
+        response = openai_client.chat.completions.create(
+            model="gpt-4.1",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": question}
+            ],
+            temperature=0,
+            response_format={"type": "json_object"}
+        )
+        result = json.loads(response.choices[0].message.content)
+        logger.info(f"Scope check: {result}")
+        return result
+    except Exception as e:
+        logger.error(f"Error in scope check: {e}")
+        return {"in_scope": True, "reason": ""}  # fail open — let it proceed
+
 
 def extract_search_terms(question: str) -> List[str]:
     """

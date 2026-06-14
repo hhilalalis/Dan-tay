@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from agentic_search import extract_search_terms, agentic_search
+from agentic_search import check_scope, extract_search_terms, agentic_search
 
 st.set_page_config(
     page_title="Danıştay Case Law Q&A",
@@ -105,12 +105,19 @@ if prompt := st.chat_input("Ask a legal question in English or Turkish..."):
 
     with st.chat_message("assistant"):
         with st.status("Searching Danıştay...", expanded=True) as status:
-            st.write("Extracting search terms...")
-            phrases = extract_search_terms(prompt)
-            st.write(f"Searching for: **{' | '.join(phrases)}**")
-            st.write(f"Scraping up to {max_cases} case(s) per phrase...")
-            response = asyncio.run(agentic_search(prompt, max_cases=max_cases, phrases=phrases))
-            status.update(label="Done!", state="complete", expanded=False)
+            st.write("Checking if this is within Danıştay's jurisdiction...")
+            scope = check_scope(prompt)
+
+            if not scope.get("in_scope", True):
+                status.update(label="Outside Danıştay's scope", state="error", expanded=False)
+                response = f"⚠️ **Bu soru Danıştay'ın yetki alanı dışındadır.**\n\n{scope.get('reason', '')}"
+            else:
+                st.write("Extracting search terms...")
+                phrases = extract_search_terms(prompt)
+                st.write(f"Searching for: **{' | '.join(phrases)}**")
+                st.write(f"Scraping up to {max_cases} case(s) per phrase...")
+                response = asyncio.run(agentic_search(prompt, max_cases=max_cases, phrases=phrases))
+                status.update(label="Done!", state="complete", expanded=False)
         st.markdown(response)
 
     messages.append({"role": "assistant", "content": response})
