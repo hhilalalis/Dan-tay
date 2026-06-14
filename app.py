@@ -22,9 +22,23 @@ if "current_conv_id" not in st.session_state:
     st.session_state.current_conv_id = None
 
 def new_conversation():
+    # If already on an empty chat, just stay there (don't stack up blank chats)
+    if st.session_state.current_conv_id:
+        current = st.session_state.conversations.get(st.session_state.current_conv_id)
+        if current and len(current["messages"]) == 0:
+            return
     conv_id = str(uuid.uuid4())
     st.session_state.conversations[conv_id] = {"title": "New Chat", "messages": []}
     st.session_state.current_conv_id = conv_id
+
+def delete_conversation(conv_id):
+    del st.session_state.conversations[conv_id]
+    if st.session_state.current_conv_id == conv_id:
+        remaining = list(st.session_state.conversations.keys())
+        if remaining:
+            st.session_state.current_conv_id = remaining[-1]
+        else:
+            new_conversation()
 
 # Always have at least one conversation open
 if not st.session_state.current_conv_id or \
@@ -42,12 +56,18 @@ with st.sidebar:
     # Conversation list — newest first
     for conv_id in reversed(list(st.session_state.conversations.keys())):
         conv = st.session_state.conversations[conv_id]
-        label = conv["title"][:38] + ("…" if len(conv["title"]) > 38 else "")
+        label = conv["title"][:32] + ("…" if len(conv["title"]) > 32 else "")
         is_active = conv_id == st.session_state.current_conv_id
-        if st.button(label, key=f"conv_{conv_id}", use_container_width=True,
-                     type="primary" if is_active else "secondary"):
-            st.session_state.current_conv_id = conv_id
-            st.rerun()
+        col1, col2 = st.columns([5, 1])
+        with col1:
+            if st.button(label, key=f"conv_{conv_id}", use_container_width=True,
+                         type="primary" if is_active else "secondary"):
+                st.session_state.current_conv_id = conv_id
+                st.rerun()
+        with col2:
+            if st.button("✕", key=f"del_{conv_id}"):
+                delete_conversation(conv_id)
+                st.rerun()
 
     st.divider()
     max_cases = st.slider("Max cases per phrase", min_value=1, max_value=10, value=3)
